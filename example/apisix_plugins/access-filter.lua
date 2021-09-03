@@ -1,10 +1,29 @@
 local core = require("apisix.core")
+local jwt = require("resty.jwt")
+
+local sub_str = string.sub
+local lower_str = string.lower
+
+local DEFAULT_TOKEN_NAME = "Blade-Auth"
+local DEFAULT_SING_KEY = "bladexisapowerfulmicroservicearchitectureupgradedandoptimizedfromacommercialproject"
+
+local plugin_name = "access-filter"
 
 local schema = {
     type = "object",
+    properties = {
+        token_name = {
+            description = "The name of JWT token in Http header.",
+            type = "string",
+            default = DEFAULT_TOKEN_NAME,
+        },
+        sign_key = {
+            description = "The sign key of JWT.",
+            type = "string",
+            default = DEFAULT_SING_KEY,
+        },
+    },
 }
-
-local plugin_name = "access-filter"
 
 local _M = {
     version = 0.1,
@@ -18,26 +37,56 @@ function _M.check_schema(conf)
 end
 
 
---- Logics
+--- Main Logics
 
-local AUTH_KEY = "Blade-Auth"
 
-local function process_authkey(conf, ctx, authkey)
-    core.log.warn("key: " .. authkey)
-    if authkey == "abc" then
-        core.log.warn("true")
-        return true
+-- Get JWT token
+local function get_jwt_token(conf, ctx)
+    -- Get token from header
+    local token = core.request.header(ctx, conf.token_name)
+    if token then
+        local prefix = sub_str(token, 1, 7)
+        if lower_str(prefix) == "bearer " then
+            return sub_str(token, 8)
+        end
+        return token
     end
-    core.log.warn("false")
-    return false
+
+    -- Get token from url argument
+    token = ctx.var["arg_" .. conf.token_name]
+    if token then
+        return token
+    end
 end
 
-function _M.header_filter(conf, ctx)
-    local authkey = core.request.header(ctx, AUTH_KEY)
-    local allow_access = process_authkey(conf, ctx, authkey)
+-- Verify JWT token
+local function verify_jwt_token(conf, ctx, jwt_token)
+    -- Parse JWT
+    local jwt_obj = jwt:load_jwt(jwt_token)
+    core.log.info("jwt object: ", core.json.delay_encode(jwt_obj))
+    if not jwt_obj.valid then
+        return { message = jwt_obj.reason }
+    end
 
-    if not allow_access then
-        return 500
+    -- Verify JWT
+    jwt_obj = jwt:verify_jwt_obj(conf.sign_key, jwt_obj)
+    core.log.info("jwt object: ", core.json.delay_encode(jwt_obj))
+    if not jwt_obj.verified then
+        return { message = jwt_obj.reason }
+    end
+end
+
+
+-- Handle rewrite
+function _M.rewrite(conf, ctx)
+    local jwt_token = get_jwt_token(conf, ctx)
+    if not jwt_token then
+        return 401, "Missing token"
+    end
+
+    local err = verify_jwt_token(conf, ctx, jwt_token)
+    if err then
+        return 401, err
     end
 end
 

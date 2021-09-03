@@ -70,16 +70,6 @@ services:
     networks:
       apisix:
 
-  nacos:
-    image: nacos/nacos-server:1.4.2
-    restart: always
-    environment:
-      - MODE=standalone
-    ports:
-      - "8848:8848"
-    networks:
-      apisix:
-
 networks:
   apisix:
     driver: bridge
