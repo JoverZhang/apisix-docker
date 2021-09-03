@@ -5,23 +5,26 @@ services:
     image: apache/apisix-dashboard:2.7
     restart: always
     volumes:
-    - ./dashboard_conf/conf.yaml:/usr/local/apisix-dashboard/conf/conf.yaml
+      - ./dashboard_conf/conf.yaml:/usr/local/apisix-dashboard/conf/conf.yaml
     ports:
-    - "9000:9000"
+      - "9000:9000"
     networks:
       apisix:
 
   apisix:
-    image: apache/apisix:2.6-alpine
+    image: apache/apisix:2.7-alpine
     restart: always
     volumes:
       - ./apisix_log:/usr/local/apisix/logs
       - ./apisix_conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+      - ./apisix_plugins/jover-plugin.lua:/usr/local/apisix/apisix/plugins/jover-plugin.lua
+      - ./apisix_plugins/access-filter.lua:/usr/local/apisix/apisix/plugins/access-filter.lua
     depends_on:
       - etcd
     ##network_mode: host
     ports:
       - "9080:9080/tcp"
+      - "9090:9090/tcp"
       - "9091:9091/tcp"
       - "9443:9443/tcp"
     networks:
@@ -64,6 +67,16 @@ services:
       - "9082:80/tcp"
     environment:
       - NGINX_PORT=80
+    networks:
+      apisix:
+
+  nacos:
+    image: nacos/nacos-server:1.4.2
+    restart: always
+    environment:
+      - MODE=standalone
+    ports:
+      - "8848:8848"
     networks:
       apisix:
 

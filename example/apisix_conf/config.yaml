@@ -14,6 +14,30 @@ apisix:
       key: 4054f7cf07e344346cd3f287985e76a2
       role: viewer
 
+  enable_control: true
+  control:
+    ip: "0.0.0.0"
+    port: 9090
+
+#   extra_lua_path: /usr/local
+
+plugins:
+  - proxy-rewrite
+  - access-filter
+  - jover-plugin
+
+discovery:
+  nacos:
+    host:
+      - "http://jover:z58Zs1ESz6j7Tce@118.195.183.175:8848"
+    prefix: "/nacos/v1/"
+    fetch_interval: 30    # default 30 sec
+    weight: 100           # default 100
+    timeout:
+      connect: 2000       # default 2000 ms
+      send: 2000          # default 2000 ms
+      read: 5000          # default 5000 ms
+
 etcd:
   host:                           # it's possible to define multiple etcd hosts addresses of the same etcd cluster.
     - "http://etcd:2379"     # multiple etcd address
