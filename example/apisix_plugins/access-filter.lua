@@ -77,8 +77,8 @@ local function verify_jwt_token(conf, ctx, jwt_token)
 end
 
 
--- Handle rewrite
-function _M.rewrite(conf, ctx)
+-- Handle access
+function _M.access(conf, ctx)
     local jwt_token = get_jwt_token(conf, ctx)
     if not jwt_token then
         return 401, "Missing token"
