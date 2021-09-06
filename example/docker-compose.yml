@@ -19,6 +19,7 @@ services:
       - ./apisix_conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
       - ./apisix_plugins/jover-plugin.lua:/usr/local/apisix/apisix/plugins/jover-plugin.lua
       - ./apisix_plugins/access-filter.lua:/usr/local/apisix/apisix/plugins/access-filter.lua
+      - ./apisix_plugins/oss-proxy.lua:/usr/local/apisix/apisix/plugins/oss-proxy.lua
     depends_on:
       - etcd
     ##network_mode: host
