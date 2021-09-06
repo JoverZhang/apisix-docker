@@ -65,15 +65,17 @@ local function verify_jwt_token(conf, ctx, jwt_token)
     -- Parse JWT
     local jwt_obj = jwt:load_jwt(jwt_token)
     if not jwt_obj.valid then
-        return { message = jwt_obj.reason }
+        return nil, { message = jwt_obj.reason }
     end
 
     -- Verify JWT
     jwt_obj = jwt:verify_jwt_obj(conf.sign_key, jwt_obj)
     log.info("jwt object payload: ", core.json.delay_encode(jwt_obj.payload))
     if not jwt_obj.verified then
-        return { message = jwt_obj.reason }
+        return nil, { message = jwt_obj.reason }
     end
+
+    return jwt_obj
 end
 
 
@@ -84,10 +86,13 @@ function _M.rewrite(conf, ctx)
         return 401, "Missing token"
     end
 
-    local err = verify_jwt_token(conf, ctx, jwt_token)
-    if err then
+    local jwt_obj, err = verify_jwt_token(conf, ctx, jwt_token)
+    if not jwt_obj then
         return 401, err
     end
+
+    ctx.ext_var = ctx.ext_var or {}
+    ctx.ext_var.jwt_obj = jwt_obj.payload
 end
 
 return _M
