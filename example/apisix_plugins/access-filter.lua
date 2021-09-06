@@ -1,6 +1,7 @@
 local core = require("apisix.core")
 local jwt = require("resty.jwt")
 
+local log = core.log
 local sub_str = string.sub
 local lower_str = string.lower
 
@@ -63,14 +64,13 @@ end
 local function verify_jwt_token(conf, ctx, jwt_token)
     -- Parse JWT
     local jwt_obj = jwt:load_jwt(jwt_token)
-    core.log.info("jwt object: ", core.json.delay_encode(jwt_obj))
     if not jwt_obj.valid then
         return { message = jwt_obj.reason }
     end
 
     -- Verify JWT
     jwt_obj = jwt:verify_jwt_obj(conf.sign_key, jwt_obj)
-    core.log.info("jwt object: ", core.json.delay_encode(jwt_obj))
+    log.info("jwt object payload: ", core.json.delay_encode(jwt_obj.payload))
     if not jwt_obj.verified then
         return { message = jwt_obj.reason }
     end
@@ -78,7 +78,7 @@ end
 
 
 -- Handle access
-function _M.access(conf, ctx)
+function _M.rewrite(conf, ctx)
     local jwt_token = get_jwt_token(conf, ctx)
     if not jwt_token then
         return 401, "Missing token"
