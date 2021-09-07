@@ -1,26 +1,26 @@
-local core = require("apisix.core")
-local jwt = require("resty.jwt")
+local core = require('apisix.core')
+local jwt = require('resty.jwt')
 
 local log = core.log
 local sub_str = string.sub
 local lower_str = string.lower
 
-local DEFAULT_TOKEN_NAME = "Blade-Auth"
-local DEFAULT_SING_KEY = "bladexisapowerfulmicroservicearchitectureupgradedandoptimizedfromacommercialproject"
+local DEFAULT_TOKEN_NAME = 'Blade-Auth'
+local DEFAULT_SING_KEY = 'bladexisapowerfulmicroservicearchitectureupgradedandoptimizedfromacommercialproject'
 
-local plugin_name = "access-filter"
+local plugin_name = 'access-filter'
 
 local schema = {
-    type = "object",
+    type = 'object',
     properties = {
         token_name = {
-            description = "The name of JWT token in Http header.",
-            type = "string",
+            description = 'The name of JWT token in Http header.',
+            type = 'string',
             default = DEFAULT_TOKEN_NAME,
         },
         sign_key = {
-            description = "The sign key of JWT.",
-            type = "string",
+            description = 'The sign key of JWT.',
+            type = 'string',
             default = DEFAULT_SING_KEY,
         },
     },
@@ -41,26 +41,35 @@ end
 --- Main Logics
 
 
--- Get JWT token
+---Get JWT token
+---
+---@param conf table
+---@param ctx table
+---@return string jwt token in request
 local function get_jwt_token(conf, ctx)
     -- Get token from header
     local token = core.request.header(ctx, conf.token_name)
     if token then
         local prefix = sub_str(token, 1, 7)
-        if lower_str(prefix) == "bearer " then
+        if lower_str(prefix) == 'bearer ' then
             return sub_str(token, 8)
         end
         return token
     end
 
     -- Get token from url argument
-    token = ctx.var["arg_" .. conf.token_name]
+    token = ctx.var['arg_' .. conf.token_name]
     if token then
         return token
     end
 end
 
--- Verify JWT token
+---Verify JWT token
+---
+---@param conf table
+---@param ctx table
+---@param jwt_token string
+---@return (table, table) (jwt object, error message)
 local function verify_jwt_token(conf, ctx, jwt_token)
     -- Parse JWT
     local jwt_obj = jwt:load_jwt(jwt_token)
@@ -70,7 +79,7 @@ local function verify_jwt_token(conf, ctx, jwt_token)
 
     -- Verify JWT
     jwt_obj = jwt:verify_jwt_obj(conf.sign_key, jwt_obj)
-    log.info("jwt object payload: ", core.json.delay_encode(jwt_obj.payload))
+    log.info('jwt object payload: ', core.json.delay_encode(jwt_obj.payload))
     if not jwt_obj.verified then
         return nil, { message = jwt_obj.reason }
     end
@@ -78,12 +87,15 @@ local function verify_jwt_token(conf, ctx, jwt_token)
     return jwt_obj
 end
 
-
--- Handle access
+---Handle rewrite
+---
+---@param conf table
+---@param ctx table
+---@return (number, table) (status, body)
 function _M.rewrite(conf, ctx)
     local jwt_token = get_jwt_token(conf, ctx)
     if not jwt_token then
-        return 401, "Missing token"
+        return 401, 'Missing token'
     end
 
     local jwt_obj, err = verify_jwt_token(conf, ctx, jwt_token)
