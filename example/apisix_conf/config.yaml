@@ -7,11 +7,11 @@ apisix:
 
   admin_key:
     - name: "admin"
-      key: edd1c9f034335f136f87ad84b625c8f1
+      key: edd1c9f034335f136f87ad84b625c8f1pedd1c9f034335f136f87ad84b625c8f1
       role: admin                 # admin: manage all configuration data
                                   # viewer: only can view configuration data
     - name: "viewer"
-      key: 4054f7cf07e344346cd3f287985e76a2
+      key: 4054f7cf07e344346cd3f287985e76a2p4054f7cf07e344346cd3f287985e76a2
       role: viewer
 
   enable_control: true
@@ -26,7 +26,6 @@ plugins:
   - proxy-rewrite
   - oss-proxy
   - access-filter
-  - jover-plugin
 
 discovery:
   nacos:
